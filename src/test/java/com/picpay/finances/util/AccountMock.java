@@ -6,6 +6,7 @@ import com.picpay.finances.core.domain.Status;
 
 import java.math.BigDecimal;
 
+import static com.picpay.finances.core.domain.AccountType.CHECKING;
 import static com.picpay.finances.util.HelpTest.AGENCY;
 import static com.picpay.finances.util.HelpTest.ID;
 
@@ -21,6 +22,15 @@ public class AccountMock {
                 .accountType(accountType)
                 .status(status)
                 .customerId(ID)
+                .build();
+    }
+
+    public static Account createAccountData(String digit, String agency) {
+        return Account.builder()
+                .number("12345")
+                .digit(digit)
+                .agency(agency)
+                .accountType(CHECKING)
                 .build();
     }
 

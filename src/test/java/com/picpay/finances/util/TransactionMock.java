@@ -5,10 +5,9 @@ import com.picpay.finances.core.domain.Transaction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static com.picpay.finances.core.domain.AccountType.CHECKING;
-import static com.picpay.finances.core.domain.FinancialTransactionType.CREDIT;
-import static com.picpay.finances.core.domain.FinancialTransactionType.DEBIT;
 import static com.picpay.finances.core.domain.Status.ACTIVATED;
 import static com.picpay.finances.core.domain.TransactionType.REFUND;
 import static com.picpay.finances.core.domain.TransactionType.TRANSFER;
@@ -25,8 +24,6 @@ public class TransactionMock {
                 .toAccount(AccountMock.create(CHECKING, ACTIVATED, TEN))
                 .amount(TEN)
                 .transactionType(TRANSFER)
-                .financialTransactionOrigin(FinancialTransactionMock.create(DEBIT, ZERO))
-                .financialTransactionDestination(FinancialTransactionMock.create(CREDIT, new BigDecimal(20)))
                 .createdAt(LocalDateTime.of(2025, 1, 1, 0, 0, 0))
                 .updatedAt(LocalDateTime.of(2025, 1, 1, 0, 0, 0))
                 .build();
@@ -51,8 +48,6 @@ public class TransactionMock {
                 .toAccount(AccountMock.create(CHECKING, ACTIVATED, TEN))
                 .amount(TEN)
                 .transactionType(TRANSFER)
-                .financialTransactionOrigin(FinancialTransactionMock.create(DEBIT, ZERO))
-                .financialTransactionDestination(FinancialTransactionMock.create(CREDIT, new BigDecimal(20)))
                 .createdAt(LocalDateTime.of(2025, 1, 1, 0, 0, 0))
                 .updatedAt(LocalDateTime.of(2025, 1, 1, 0, 0, 0))
                 .build();
@@ -65,8 +60,6 @@ public class TransactionMock {
                 .toAccount(AccountMock.create(CHECKING, ACTIVATED, balanceToAccount))
                 .amount(TEN)
                 .transactionType(TRANSFER)
-                .financialTransactionOrigin(FinancialTransactionMock.create(DEBIT, ZERO))
-                .financialTransactionDestination(FinancialTransactionMock.create(CREDIT, new BigDecimal(20)))
                 .createdAt(LocalDateTime.of(2025, 1, 1, 0, 0, 0))
                 .updatedAt(LocalDateTime.of(2025, 1, 1, 0, 0, 0))
                 .build();
@@ -79,10 +72,16 @@ public class TransactionMock {
                 .toAccount(AccountMock.create(CHECKING, statusToAccount, TEN))
                 .amount(TEN)
                 .transactionType(TRANSFER)
-                .financialTransactionOrigin(FinancialTransactionMock.create(DEBIT, ZERO))
-                .financialTransactionDestination(FinancialTransactionMock.create(CREDIT, new BigDecimal(20)))
                 .createdAt(LocalDateTime.of(2025, 1, 1, 0, 0, 0))
                 .updatedAt(LocalDateTime.of(2025, 1, 1, 0, 0, 0))
+                .build();
+    }
+
+    public static Transaction createTransferData(String digit, String agency) {
+        return Transaction.builder()
+                .fromAccount(AccountMock.createAccountData(digit, agency))
+                .toAccount(AccountMock.createAccountData(digit, digit))
+                .amount(TEN)
                 .build();
     }
 

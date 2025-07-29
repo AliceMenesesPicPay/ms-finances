@@ -1,19 +1,21 @@
 package com.picpay.finances.entrypoint.api.controller;
 
+import com.picpay.finances.core.domain.Transaction;
 import com.picpay.finances.core.usecase.TransactionUseCase;
 import com.picpay.finances.entrypoint.api.controller.payload.response.TransactionResponse;
 import com.picpay.finances.util.TransactionMock;
 import com.picpay.finances.util.TransactionRequestMock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
 import static com.picpay.finances.util.HelpTest.ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +28,8 @@ class TransactionControllerTest {
     @InjectMocks
     private TransactionController transactionController;
 
+    @Captor
+    private ArgumentCaptor<Transaction> transactionCaptor;
 
     @Test
     void whenSearchByIdThenReturnTransactions() {
@@ -43,41 +47,24 @@ class TransactionControllerTest {
     }
 
     @Test
-    void whenSearchByCustomerIdThenReturnTransactions() {
-        var transaction1 = TransactionMock.createTransfer();
-        var transaction2 = TransactionMock.createRefund();
-
-        when(transactionUseCase.searchByCustomerId(ID)).thenReturn(List.of(transaction1, transaction2));
-
-        var response = transactionController.searchByCustomerId(ID);
-
-        assertThat(response)
-                .isNotNull()
-                .hasSize(2)
-                .usingRecursiveFieldByFieldElementComparator()
-                .containsExactly(
-                        TransactionResponse.from(transaction1),
-                        TransactionResponse.from(transaction2)
-                );
-
-        verify(transactionUseCase).searchByCustomerId(ID);
-    }
-
-    @Test
     void whenCreateTransferThenReturnTransfer() {
         var transactionRequest = TransactionRequestMock.create();
         var transaction = TransactionMock.createTransfer();
 
-        when(transactionUseCase.createTransfer(transactionRequest.getFromAccountId(), transactionRequest.getToAccountId(), transactionRequest.getAmount()))
+        when(transactionUseCase.createTransfer(transactionCaptor.capture()))
                 .thenReturn(transaction);
 
-        var response = transactionController.createTransfer(TransactionRequestMock.create());
+        var response = transactionController.createTransfer(transactionRequest);
+
+        assertThat(transactionCaptor.getValue())
+                .isNotNull()
+                .usingRecursiveComparison().isEqualTo(transactionRequest.toTransaction());
 
         assertThat(response)
                 .isNotNull()
                 .usingRecursiveComparison().isEqualTo(TransactionResponse.from(transaction));
 
-        verify(transactionUseCase).createTransfer(transactionRequest.getFromAccountId(), transactionRequest.getToAccountId(), transactionRequest.getAmount());
+        verify(transactionUseCase).createTransfer(any(Transaction.class));
     }
 
     @Test

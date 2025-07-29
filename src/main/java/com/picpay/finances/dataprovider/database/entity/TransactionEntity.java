@@ -1,5 +1,6 @@
 package com.picpay.finances.dataprovider.database.entity;
 
+import com.picpay.finances.core.domain.FinancialTransactionType;
 import com.picpay.finances.core.domain.Transaction;
 import com.picpay.finances.core.domain.TransactionType;
 import jakarta.persistence.*;
@@ -10,8 +11,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import static com.picpay.finances.dataprovider.database.entity.FinancialTransactionEntity.fromFinancialTransaction;
+import java.util.List;
 
 @Entity
 @Table(name = "transactions")
@@ -37,12 +37,6 @@ public class TransactionEntity {
     @Enumerated(EnumType.STRING)
     private TransactionType transactionType;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    private FinancialTransactionEntity financialTransactionOrigin;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    private FinancialTransactionEntity financialTransactionDestination;
-
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -56,8 +50,6 @@ public class TransactionEntity {
                 .toAccount(AccountEntity.fromAccount(transaction.getToAccount()))
                 .amount(transaction.getAmount())
                 .transactionType(transaction.getTransactionType())
-                .financialTransactionOrigin(transaction.getFinancialTransactionOrigin() != null ? fromFinancialTransaction(transaction.getFinancialTransactionOrigin()) : null)
-                .financialTransactionDestination(transaction.getFinancialTransactionDestination() != null ? fromFinancialTransaction(transaction.getFinancialTransactionDestination()) : null)
                 .createdAt(transaction.getCreatedAt())
                 .updatedAt(transaction.getUpdatedAt())
                 .build();
@@ -70,8 +62,6 @@ public class TransactionEntity {
                 .toAccount(toAccount.toAccount())
                 .amount(amount)
                 .transactionType(transactionType)
-                .financialTransactionOrigin(financialTransactionOrigin != null ? financialTransactionOrigin.toFinancialTransaction() : null)
-                .financialTransactionDestination(financialTransactionDestination != null ? financialTransactionDestination.toFinancialTransaction() : null)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
                 .build();

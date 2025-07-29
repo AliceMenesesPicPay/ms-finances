@@ -81,4 +81,37 @@ class AccountImplTest {
         verify(accountRepository).saveAll(anyList());
     }
 
+    @Test
+    void whenSearchByAccountCheckingAndNumberAndDigitAndAgencyThenReturnAccount() {
+        var account = AccountMock.create(CHECKING, ACTIVATED, ZERO);
+        var entity = AccountEntity.fromAccount(account);
+
+        when(accountRepository.findByAccountTypeAndNumberAndDigit(
+                CHECKING, account.getNumber(), account.getDigit()))
+                .thenReturn(Optional.of(entity));
+
+        var result = accountImpl.searchByAccountCheckingAndNumberAndDigitAndAgency(account);
+
+        assertThat(result).isPresent();
+
+        assertThat(result.get())
+                .isNotNull()
+                .usingRecursiveComparison().isEqualTo(entity);
+
+        verify(accountRepository).findByAccountTypeAndNumberAndDigit(
+                CHECKING, account.getNumber(), account.getDigit());
+    }
+
+    @Test
+    void whenSaveThenRepositorySaveIsCalled() {
+        var account = AccountMock.create(CHECKING, ACTIVATED, ZERO);
+        var entity = AccountEntity.fromAccount(account);
+
+        when(accountRepository.save(any(AccountEntity.class))).thenReturn(entity);
+
+        accountImpl.save(account);
+
+        verify(accountRepository).save(any(AccountEntity.class));
+    }
+
 }

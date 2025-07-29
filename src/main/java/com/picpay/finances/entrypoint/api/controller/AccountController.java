@@ -3,6 +3,7 @@ package com.picpay.finances.entrypoint.api.controller;
 import com.picpay.finances.core.usecase.AccountUseCase;
 import com.picpay.finances.entrypoint.api.controller.contract.AccountContract;
 import com.picpay.finances.entrypoint.api.controller.payload.request.CustomerIdRequest;
+import com.picpay.finances.entrypoint.api.controller.payload.request.DepositRequest;
 import com.picpay.finances.entrypoint.api.controller.payload.response.AccountResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 @RestController
 @RequestMapping("/accounts")
@@ -52,6 +54,13 @@ public class AccountController implements AccountContract {
         return accounts.stream()
                 .map(AccountResponse::from)
                 .toList();
+    }
+
+    @PutMapping("/deposit")
+    @ResponseStatus(NO_CONTENT)
+    @Override
+    public void deposit(@Valid @RequestBody DepositRequest depositRequest) {
+        accountUseCase.deposit(depositRequest.getAmount(), depositRequest.getAccount().toAccount());
     }
 
 }

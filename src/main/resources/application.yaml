@@ -9,5 +9,3 @@ spring:
     url: jdbc:postgresql://localhost:5432/meu_banco
     username: root
     password: root
-server:
-  port: 8081

@@ -1,10 +1,12 @@
 package com.picpay.finances.core.domain;
 
+import com.picpay.finances.dataprovider.database.entity.FinancialTransactionEntity;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static com.picpay.finances.core.domain.TransactionType.REFUND;
 import static com.picpay.finances.core.domain.TransactionType.TRANSFER;
@@ -18,26 +20,20 @@ public class Transaction {
     private Account toAccount;
     private BigDecimal amount;
     private TransactionType transactionType;
-    private FinancialTransaction financialTransactionOrigin;
-    private FinancialTransaction financialTransactionDestination;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static Transaction newTransfer(final Account fromAccount, final Account toAccount, final BigDecimal amount) {
-        var financialTransactionOrigin = FinancialTransaction.newDebit(fromAccount, amount);
-        var financialTransactionDestination = FinancialTransaction.newCredit(toAccount, amount);
+    //TODO
+    public void transfer(final Account fromAccount, final Account toAccount) {
+        this.fromAccount = fromAccount;
+        this.toAccount = toAccount;
+        transactionType = TRANSFER;
 
-        return Transaction.builder()
-                .fromAccount(fromAccount)
-                .toAccount(toAccount)
-                .amount(amount)
-                .transactionType(TRANSFER)
-                .financialTransactionOrigin(financialTransactionOrigin)
-                .financialTransactionDestination(financialTransactionDestination)
-                .build();
+        getFromAccount().debit(amount);
+        getToAccount().credit(amount);
     }
 
-    public Transaction newRefund() {
+    public Transaction refund() {
         fromAccount.credit(amount);
         toAccount.debit(amount);
 
@@ -47,6 +43,11 @@ public class Transaction {
                 .amount(amount)
                 .transactionType(REFUND)
                 .build();
+    }
+
+    public void validateAccounts() {
+        fromAccount.validate();
+        toAccount.validate();
     }
 
 }

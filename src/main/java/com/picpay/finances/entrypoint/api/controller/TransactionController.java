@@ -8,8 +8,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 import static org.springframework.http.HttpStatus.CREATED;
 
 @RestController
@@ -26,19 +24,10 @@ public class TransactionController implements TransactionContract {
         return TransactionResponse.from(transaction);
     }
 
-    @GetMapping
-    @Override
-    public List<TransactionResponse> searchByCustomerId(@RequestParam Long customerId) {
-        var transactions = transactionUseCase.searchByCustomerId(customerId);
-        return transactions.stream()
-                .map(TransactionResponse::from)
-                .toList();
-    }
-
     @PostMapping
     @ResponseStatus(CREATED)
     public TransactionResponse createTransfer(@Valid @RequestBody TransactionRequest transactionRequest) {
-        var transaction = transactionUseCase.createTransfer(transactionRequest.getFromAccountId(), transactionRequest.getToAccountId(), transactionRequest.getAmount());
+        var transaction = transactionUseCase.createTransfer(transactionRequest.toTransaction());
         return TransactionResponse.from(transaction);
     }
 

@@ -9,8 +9,8 @@ public class TransactionRequestMock {
 
     public static TransactionRequest create() {
         return TransactionRequest.builder()
-                .fromAccountId(ID)
-                .toAccountId(ID)
+                .fromAccount(AccountRequestMock.create())
+                .toAccount(AccountRequestMock.create())
                 .amount(TEN)
                 .build();
     }

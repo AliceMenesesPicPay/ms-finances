@@ -2,8 +2,10 @@ package com.picpay.finances.core.usecase;
 
 import com.picpay.finances.core.domain.*;
 import com.picpay.finances.core.exception.*;
+import com.picpay.finances.core.gateway.FinancialTransactionGateway;
 import com.picpay.finances.core.gateway.TransactionGateway;
 import com.picpay.finances.util.TransactionMock;
+import com.picpay.finances.util.TransactionRequestMock;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +21,7 @@ import java.util.Optional;
 
 import static com.picpay.finances.core.domain.Status.ACTIVATED;
 import static com.picpay.finances.core.domain.Status.CANCELED;
-import static com.picpay.finances.util.HelpTest.ID;
+import static com.picpay.finances.util.HelpTest.*;
 import static java.math.BigDecimal.*;
 import static java.math.BigDecimal.ZERO;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,11 +39,14 @@ class TransactionUseCaseTest {
     @Mock
     private TransactionGateway transactionGateway;
 
+    @Mock
+    private FinancialTransactionGateway financialTransactionGateway;
+
     @InjectMocks
     private TransactionUseCase transactionUseCase;
 
     @Captor
-    private ArgumentCaptor<List<Account>> accountsCaptor;
+    private ArgumentCaptor<List<FinancialTransaction>> financialTransactionsCaptor;
 
     @Captor
     private ArgumentCaptor<Transaction> transactionCaptor;
@@ -76,128 +81,168 @@ class TransactionUseCaseTest {
     }
 
     @Nested
-    class SearchByCustomerIdTest {
-
-        @Test
-        void whenSearchByCustomerIdThenReturnTransactions() {
-            var transaction = TransactionMock.createTransfer();
-
-            when(transactionGateway.findByCustomerId(ID)).thenReturn(List.of(transaction));
-
-            var result = transactionUseCase.searchByCustomerId(ID);
-
-            assertThat(result)
-                    .isNotNull()
-                    .usingRecursiveFieldByFieldElementComparator()
-                    .containsExactly(transaction);
-
-            verify(transactionGateway).findByCustomerId(ID);
-        }
-
-    }
-
-    @Nested
     class CreateTransferTest {
 
         @Test
         void whenCreateTransferThenReturnTransaction() {
+            var transactionData = TransactionRequestMock.create().toTransaction();
             var transaction = TransactionMock.createTransfer();
 
-            when(accountUseCase.searchById(ID))
-                    .thenReturn(transaction.getFromAccount())
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(transactionData.getFromAccount()))
+                    .thenReturn(transaction.getFromAccount());
+
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(transactionData.getToAccount()))
                     .thenReturn(transaction.getToAccount());
 
             when(transactionGateway.save(transactionCaptor.capture())).thenReturn(transaction);
 
-            var result = transactionUseCase.createTransfer(ID, ID, TEN);
+            var result = transactionUseCase.createTransfer(transactionData);
 
             assertThat(result).usingRecursiveComparison().isEqualTo(transaction);
 
-            verify(accountUseCase, times(2)).searchById(ID);
-            verify(accountUseCase).saveAll(accountsCaptor.capture());
+            verify(accountUseCase, times(2)).searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class));
+            verify(accountUseCase).saveAll(anyList());
             verify(transactionGateway).save(any(Transaction.class));
+            verify(financialTransactionGateway).saveAll(financialTransactionsCaptor.capture());
 
             var transactionSaved = transactionCaptor.getValue();
+            var financialTransactions = financialTransactionsCaptor.getValue();
 
             assertThat(transactionSaved)
                     .isNotNull()
                     .usingRecursiveComparison()
-                    .ignoringFields("id", "createdAt", "updatedAt", "financialTransactionOrigin.id", "financialTransactionDestination.id")
+                    .ignoringFields("id", "createdAt", "updatedAt")
                     .isEqualTo(transaction);
+
+            assertThat(transactionSaved.getFromAccount().getBalance())
+                    .isNotNull()
+                    .isEqualByComparingTo(TEN.subtract(transaction.getAmount()));
+
+            assertThat(transactionSaved.getToAccount().getBalance())
+                    .isNotNull()
+                    .isEqualByComparingTo(TEN.add(transaction.getAmount()));
+
+            assertThat(financialTransactions)
+                    .isNotEmpty()
+                    .hasSize(2);
+
+            assertThat(financialTransactions.get(0))
+                    .isNotNull()
+                    .usingRecursiveComparison()
+                    .ignoringFields("transaction.id", "transaction.createdAt", "transaction.updatedAt")
+                    .isEqualTo(FinancialTransaction.createTransferDebit(transactionSaved));
+
+            assertThat(financialTransactions.get(1))
+                    .isNotNull()
+                    .usingRecursiveComparison()
+                    .ignoringFields("transaction.id", "transaction.createdAt", "transaction.updatedAt")
+                    .isEqualTo(FinancialTransaction.createTransferCredit(transactionSaved));
         }
 
         @Test
         void whenCreateTransferAndFromAccountHasZeroBalanceThenThrowTransactionDeclinedException() {
+            var transactionData = TransactionRequestMock.create().toTransaction();
             var transaction = TransactionMock.createWithFromAccountBalance(ZERO);
 
-            when(accountUseCase.searchById(ID))
-                    .thenReturn(transaction.getFromAccount())
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(transactionData.getFromAccount()))
+                    .thenReturn(transaction.getFromAccount());
+
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(transactionData.getToAccount()))
                     .thenReturn(transaction.getToAccount());
 
-            assertThatThrownBy(() -> transactionUseCase.createTransfer(ID, ID, TEN))
+            assertThatThrownBy(() -> transactionUseCase.createTransfer(transactionData))
                     .isInstanceOf(TransactionDeclinedException.class);
 
-            verify(accountUseCase, times(2)).searchById(ID);
+            verify(accountUseCase, times(2)).searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class));
             verify(accountUseCase, never()).saveAll(anyList());
             verify(transactionGateway, never()).save(any(Transaction.class));
         }
 
         @Test
         void whenCreateTransferAndFromAccountHasNegativeBalanceThenThrowTransactionDeclinedException() {
+            var transactionData = TransactionRequestMock.create().toTransaction();
             var transaction = TransactionMock.createWithFromAccountBalance(new BigDecimal(-4));
 
-            when(accountUseCase.searchById(ID))
-                    .thenReturn(transaction.getFromAccount())
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(transactionData.getFromAccount()))
+                    .thenReturn(transaction.getFromAccount());
+
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(transactionData.getToAccount()))
                     .thenReturn(transaction.getToAccount());
 
-            assertThatThrownBy(() -> transactionUseCase.createTransfer(ID, ID, TEN))
+            assertThatThrownBy(() -> transactionUseCase.createTransfer(transactionData))
                     .isInstanceOf(TransactionDeclinedException.class);
 
-            verify(accountUseCase, times(2)).searchById(ID);
+            verify(accountUseCase, times(2)).searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class));
             verify(accountUseCase, never()).saveAll(anyList());
             verify(transactionGateway, never()).save(any(Transaction.class));
         }
 
         @Test
         void whenCreateTransferAndFromAccountIsCanceledThenThrowException() {
+            var transactionData = TransactionRequestMock.create().toTransaction();
             var transaction = TransactionMock.createWithAccountIsCanceled(CANCELED, ACTIVATED);
 
-            when(accountUseCase.searchById(ID))
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class)))
                     .thenReturn(transaction.getFromAccount())
                     .thenReturn(transaction.getToAccount());
 
-            assertThatThrownBy(() -> transactionUseCase.createTransfer(ID, ID, TEN))
+            assertThatThrownBy(() -> transactionUseCase.createTransfer(transactionData))
                     .isInstanceOf(AccountAlreadyCancelledException.class);
 
-            verify(accountUseCase, times(2)).searchById(ID);
+            verify(accountUseCase, times(2)).searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class));
             verify(accountUseCase, never()).saveAll(anyList());
             verify(transactionGateway, never()).save(any(Transaction.class));
         }
 
         @Test
         void whenCreateTransferAndToAccountIsCanceledThenThrowException() {
+            var transactionData = TransactionRequestMock.create().toTransaction();
             var transaction = TransactionMock.createWithAccountIsCanceled(ACTIVATED, CANCELED);
 
-            when(accountUseCase.searchById(ID))
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class)))
                     .thenReturn(transaction.getFromAccount())
                     .thenReturn(transaction.getToAccount());
 
-            assertThatThrownBy(() -> transactionUseCase.createTransfer(ID, ID, TEN))
+            assertThatThrownBy(() -> transactionUseCase.createTransfer(transactionData))
                     .isInstanceOf(AccountAlreadyCancelledException.class);
 
-            verify(accountUseCase, times(2)).searchById(ID);
+            verify(accountUseCase, times(2)).searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class));
             verify(accountUseCase, never()).saveAll(anyList());
             verify(transactionGateway, never()).save(any(Transaction.class));
         }
 
         @Test
         void whenCreateTransferAndAccountNotFoundThenThrowBusinessException() {
-            when(accountUseCase.searchById(ID)).thenThrow(new AccountNotFoundException());
+            var transactionData = TransactionRequestMock.create().toTransaction();
 
-            assertThatThrownBy(() -> transactionUseCase.createTransfer(ID, ID, TEN))
+            when(accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class))).thenThrow(new AccountNotFoundException());
+
+            assertThatThrownBy(() -> transactionUseCase.createTransfer(transactionData))
                     .isInstanceOf(BusinessException.class);
 
-            verify(accountUseCase, times(1)).searchById(ID);
+            verify(accountUseCase, times(1)).searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class));
+            verify(transactionGateway, never()).save(any(Transaction.class));
+        }
+
+        @Test
+        void whenCreateTransferAndAccountDigitNotValidThenThrowDigitIsNotValidException() {
+            var transactionData = TransactionMock.createTransferData("2", AGENCY);
+
+            assertThatThrownBy(() -> transactionUseCase.createTransfer(transactionData))
+                    .isInstanceOf(DigitIsNotValidException.class);
+
+            verify(accountUseCase, never()).searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class));
+            verify(transactionGateway, never()).save(any(Transaction.class));
+        }
+
+        @Test
+        void whenCreateTransferAndAccountAgencyIsNotValidThenThrowAgencyIsNotValidException() {
+            var transactionData = TransactionMock.createTransferData(DIGIT, "3");
+
+            assertThatThrownBy(() -> transactionUseCase.createTransfer(transactionData))
+                    .isInstanceOf(AgencyIsNotValidException.class);
+
+            verify(accountUseCase, never()).searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class));
             verify(transactionGateway, never()).save(any(Transaction.class));
         }
 
@@ -223,14 +268,40 @@ class TransactionUseCaseTest {
             verify(transactionGateway).findById(ID);
             verify(accountUseCase).saveAll(anyList());
             verify(transactionGateway).save(any(Transaction.class));
+            verify(financialTransactionGateway).saveAll(financialTransactionsCaptor.capture());
 
             var refundSaved = transactionCaptor.getValue();
+            var financialTransactions = financialTransactionsCaptor.getValue();
 
             assertThat(refundSaved)
                     .isNotNull()
                     .usingRecursiveComparison()
-                    .ignoringFields("id", "createdAt", "updatedAt", "financialTransactionOrigin.id", "financialTransactionDestination.id")
+                    .ignoringFields("id", "createdAt", "updatedAt")
                     .isEqualTo(refundTransaction);
+
+            assertThat(refundSaved.getFromAccount().getBalance())
+                    .isNotNull()
+                    .isEqualByComparingTo(TEN.add(transaction.getAmount()));
+
+            assertThat(refundSaved.getToAccount().getBalance())
+                    .isNotNull()
+                    .isEqualByComparingTo(TEN.subtract(transaction.getAmount()));
+
+            assertThat(financialTransactions)
+                    .isNotEmpty()
+                    .hasSize(2);
+
+            assertThat(financialTransactions.get(0))
+                    .isNotNull()
+                    .usingRecursiveComparison()
+                    .ignoringFields("transaction.id", "transaction.createdAt", "transaction.updatedAt")
+                    .isEqualTo(FinancialTransaction.createRefundDebit(refundSaved));
+
+            assertThat(financialTransactions.get(1))
+                    .isNotNull()
+                    .usingRecursiveComparison()
+                    .ignoringFields("transaction.id", "transaction.createdAt", "transaction.updatedAt")
+                    .isEqualTo(FinancialTransaction.createRefundCredit(refundSaved));
         }
 
         @Test

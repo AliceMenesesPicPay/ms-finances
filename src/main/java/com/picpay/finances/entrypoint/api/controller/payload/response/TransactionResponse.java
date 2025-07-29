@@ -1,7 +1,6 @@
 package com.picpay.finances.entrypoint.api.controller.payload.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.picpay.finances.core.domain.FinancialTransaction;
 import com.picpay.finances.core.domain.Transaction;
 import com.picpay.finances.core.domain.TransactionType;
 import lombok.Builder;
@@ -20,8 +19,6 @@ public class TransactionResponse {
     private Long toAccountId;
     private BigDecimal amount;
     private TransactionType transactionType;
-    private FinancialTransactionResponse financialTransactionOrigin;
-    private FinancialTransactionResponse financialTransactionDestination;
     private LocalDateTime createdAt;
 
     public static TransactionResponse from(Transaction transaction) {
@@ -31,8 +28,6 @@ public class TransactionResponse {
                 .toAccountId(transaction.getToAccount().getId())
                 .amount(transaction.getAmount())
                 .transactionType(transaction.getTransactionType())
-                .financialTransactionOrigin(transaction.getFinancialTransactionOrigin() != null ? FinancialTransactionResponse.from(transaction.getFinancialTransactionOrigin()) : null)
-                .financialTransactionDestination(transaction.getFinancialTransactionDestination() != null ? FinancialTransactionResponse.from(transaction.getFinancialTransactionDestination()) : null)
                 .createdAt(transaction.getCreatedAt())
                 .build();
     }

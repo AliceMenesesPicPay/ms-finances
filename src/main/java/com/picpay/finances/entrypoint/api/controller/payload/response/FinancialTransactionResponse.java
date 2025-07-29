@@ -13,18 +13,20 @@ import java.time.LocalDateTime;
 public class FinancialTransactionResponse {
 
     private Long id;
-    private FinancialTransactionType financialTransactionType;
+    private String description;
     private BigDecimal amount;
-    private Long accountId;
+    private BigDecimal balance;
+    private FinancialTransactionType financialTransactionType;
     private LocalDateTime createdAt;
 
     public static FinancialTransactionResponse from(FinancialTransaction financialTransaction) {
         return FinancialTransactionResponse.builder()
                 .id(financialTransaction.getId())
-                .financialTransactionType(financialTransaction.getFinancialTransactionType())
+                .description(financialTransaction.getDescription())
                 .amount(financialTransaction.getAmount())
-                .accountId(financialTransaction.getAccount().getId())
+                .balance(financialTransaction.getBalance())
                 .createdAt(financialTransaction.getCreatedAt())
+                .financialTransactionType(financialTransaction.getFinancialTransactionType())
                 .build();
     }
 

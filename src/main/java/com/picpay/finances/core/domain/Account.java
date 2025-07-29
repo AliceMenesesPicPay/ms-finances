@@ -1,8 +1,6 @@
 package com.picpay.finances.core.domain;
 
-import com.picpay.finances.core.exception.AccountAlreadyCancelledException;
-import com.picpay.finances.core.exception.AccountHasBalanceException;
-import com.picpay.finances.core.exception.TransactionDeclinedException;
+import com.picpay.finances.core.exception.*;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -84,6 +82,24 @@ public class Account {
         var mod = sum % 11;
         var digit = mod == 0 ? 0 : 10 - mod;
         return String.valueOf(digit);
+    }
+
+    public void validate() {
+        isAgencyValid();
+        isDigitValid();
+    }
+
+    //TODO colocar indice no banco para impedir criar conta com o msm numero
+    private void isAgencyValid() {
+        if (!agency.equals(AGENCY)) {
+            throw new AgencyIsNotValidException(agency);
+        }
+    }
+
+    private void isDigitValid() {
+        if (!digit.equals(calculateDigit(number))) {
+            throw new DigitIsNotValidException(number, digit);
+        }
     }
 
     public void cancel() {

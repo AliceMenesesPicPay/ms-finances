@@ -2,8 +2,10 @@ package com.picpay.finances.core.usecase;
 
 import com.picpay.finances.core.domain.Account;
 import com.picpay.finances.core.domain.AccountType;
+import com.picpay.finances.core.domain.FinancialTransaction;
 import com.picpay.finances.core.exception.AccountNotFoundException;
 import com.picpay.finances.core.gateway.AccountGateway;
+import com.picpay.finances.core.gateway.FinancialTransactionGateway;
 import com.picpay.finances.util.AccountMock;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,11 +39,17 @@ class AccountUseCaseTest {
     @Mock
     private AccountGateway accountGateway;
 
+    @Mock
+    private FinancialTransactionGateway financialTransactionGateway;
+
     @InjectMocks
     private AccountUseCase accountUseCase;
 
     @Captor
     private ArgumentCaptor<List<Account>> accountsCaptor;
+
+    @Captor
+    private ArgumentCaptor<FinancialTransaction> financialTransactionCaptor;
 
     @Nested
     class SearchByIdTest {
@@ -182,6 +191,77 @@ class AccountUseCaseTest {
 
             verify(accountGateway).findByCustomerId(ID);
             verify(accountGateway, never()).saveAll(anyList());
+        }
+
+    }
+
+    @Nested
+    class DepositTest {
+
+        @Test
+        void whenDepositThenAccountIsCreditedAndTransactionIsSaved() {
+            var account = AccountMock.create(CHECKING, ACTIVATED, ZERO);
+            var amount = new BigDecimal("100.00");
+
+            when(accountGateway.searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class)))
+                    .thenReturn(Optional.of(account));
+
+            accountUseCase.deposit(amount, account);
+
+            verify(accountGateway).save(account);
+            verify(financialTransactionGateway).save(financialTransactionCaptor.capture());
+
+            var financialTransaction = financialTransactionCaptor.getValue();
+
+            assertThat(account.getBalance()).isEqualByComparingTo(amount);
+            assertThat(financialTransaction).usingRecursiveComparison().isEqualTo(FinancialTransaction.createDeposit(amount, account));
+        }
+
+        @Test
+        void whenDepositWithNonExistentAccountThenThrowAccountNotFoundException() {
+            var account = AccountMock.create(CHECKING, ACTIVATED, ZERO);
+            var amount = new BigDecimal("100.00");
+
+            when(accountGateway.searchByAccountCheckingAndNumberAndDigitAndAgency(any(Account.class)))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> accountUseCase.deposit(amount, account))
+                    .isInstanceOf(AccountNotFoundException.class);
+
+            verify(accountGateway, never()).save(any(Account.class));
+            verify(financialTransactionGateway, never()).save(any(FinancialTransaction.class));
+        }
+
+        @Nested
+        class SearchByAccountCheckingAndNumberAndDigitAndAgencyTest {
+
+            @Test
+            void whenAccountExistsShouldReturnAccount() {
+                var account = AccountMock.create(CHECKING, ACTIVATED, ZERO);
+
+                when(accountGateway.searchByAccountCheckingAndNumberAndDigitAndAgency(account))
+                        .thenReturn(Optional.of(account));
+
+                var result = accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(account);
+
+                verify(accountGateway).searchByAccountCheckingAndNumberAndDigitAndAgency(account);
+
+                assertThat(result).usingRecursiveComparison().isEqualTo(account);
+            }
+
+            @Test
+            void whenAccountDoesNotExistShouldThrowAccountNotFoundException() {
+                var account = AccountMock.create(CHECKING, ACTIVATED, ZERO);
+
+                when(accountGateway.searchByAccountCheckingAndNumberAndDigitAndAgency(account))
+                        .thenReturn(Optional.empty());
+
+                assertThatThrownBy(() -> accountUseCase.searchByAccountCheckingAndNumberAndDigitAndAgency(account))
+                        .isInstanceOf(AccountNotFoundException.class);
+
+                verify(accountGateway).searchByAccountCheckingAndNumberAndDigitAndAgency(account);
+            }
+
         }
 
     }
