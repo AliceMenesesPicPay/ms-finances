@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: ms-finances
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    url: ${FINANCES_DATASOURCE_URL}
+    username: ${FINANCES_DATASOURCE_USERNAME}
+    password: ${FINANCES_DATASOURCE_PASSWORD}
+
+picpay:
+  services:
+    customer:
+      url: ${CUSTOMER_URL}
+
+server:
+  port: 8081
