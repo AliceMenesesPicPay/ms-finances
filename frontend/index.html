@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alice Bank - Seu banco digital</title>
+    <link rel="stylesheet" href="styles.css?v=6">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Tela de Login -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="bank-logo">
+                    <div class="logo-icon˚">🏦</div>
+                    <h1>Alice Bank</h1>
+                </div>
+                <p class="login-subtitle">Seu banco digital de confiança</p>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <label for="customerId">Número do Cliente</label>
+                    <input type="number" id="customerId" placeholder="Digite seu ID de cliente" required>
+                </div>
+                <button type="submit" class="login-button">
+                    <span>Entrar</span>
+                    <div class="login-loading" style="display: none;">...</div>
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p>Primeira vez aqui? <a href="#" onclick="showCreateAccountScreen()">Criar conta</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela de Criar Conta -->
+    <div id="createAccountScreen" class="login-screen" style="display: none;">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="bank-logo">
+                    <div class="logo-icon">🏦</div>
+                    <h1>Alice Bank</h1>
+                </div>
+                <p class="login-subtitle">Criar Nova Conta</p>
+            </div>
+            
+                        <form id="createAccountForm">
+                <div class="input-group">
+                    <label for="accountName">Nome da conta</label>
+                    <input type="text" id="accountName" placeholder="Digite o nome da sua conta" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="customerId">ID do cliente</label>
+                    <input type="text" id="customerId" placeholder="Digite seu ID de cliente" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="accountType">Tipo de conta</label>
+                    <div class="account-type-selector">
+                        <div class="account-type-option" data-type="CHECKING">
+                            <div class="account-type-icon">💳</div>
+                            <div class="account-type-info">
+                                <h3>Conta Corrente</h3>
+                                <p>Para o dia a dia, com cartão de débito e transferências ilimitadas</p>
+                            </div>
+                            <div class="account-type-radio">
+                                <input type="radio" name="accountType" value="CHECKING" id="checking" checked>
+                                <label for="checking"></label>
+                            </div>
+                        </div>
+                        
+                        <div class="account-type-option" data-type="SAVINGS">
+                            <div class="account-type-icon">🏛️</div>
+                            <div class="account-type-info">
+                                <h3>Conta Poupança</h3>
+                                <p>Para guardar dinheiro com rendimento e segurança</p>
+                            </div>
+                            <div class="account-type-radio">
+                                <input type="radio" name="accountType" value="SAVINGS" id="savings">
+                                <label for="savings"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary">Criar conta</button>
+            </form>
+            
+            <div class="login-footer">
+                <p>Já tem conta? <a href="#" onclick="showLoginScreen()">Fazer login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Principal -->
+    <div id="bankApp" class="bank-app" style="display: none;">
+        <!-- Header do App -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="bank-brand">
+                    <div class="logo-mini">🏦</div>
+                    <span>Alice Bank</span>
+                </div>
+                <div class="user-info">
+                    <span class="welcome-text">Olá, Cliente</span>
+                    <span id="currentCustomerId" class="customer-id"></span>
+                    <button class="logout-btn" onclick="logout()">Sair</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navegação -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="showSection('dashboard')">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Início</span>
+            </button>
+            <button class="nav-item" onclick="showSection('transfer')">
+                <span class="nav-icon">💸</span>
+                <span class="nav-label">Transferir</span>
+            </button>
+            <button class="nav-item" onclick="showSection('deposit')">
+                <span class="nav-icon">💰</span>
+                <span class="nav-label">Depositar</span>
+            </button>
+            <button class="nav-item" onclick="showSection('statement')">
+                <span class="nav-icon">📄</span>
+                <span class="nav-label">Extrato</span>
+            </button>
+            <button class="nav-item" onclick="showSection('accounts')">
+                <span class="nav-icon">💳</span>
+                <span class="nav-label">Contas</span>
+            </button>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Dashboard -->
+            <section id="dashboard" class="section active">
+                <div class="section-header">
+                    <h2>Resumo da Conta</h2>
+                    <div class="account-selector">
+                        <button class="account-selector-btn active" data-account-type="CHECKING" onclick="switchAccount('CHECKING')">
+                            <span class="account-icon">💳</span>
+                            <span class="account-name">Conta Corrente</span>
+                        </button>
+                        <button class="account-selector-btn" data-account-type="SAVINGS" onclick="switchAccount('SAVINGS')">
+                            <span class="account-icon">🏛️</span>
+                            <span class="account-name">Conta Poupança</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="cards-grid">
+                    <div class="balance-card">
+                        <div class="card-header">
+                            <h3 id="currentAccountTitle">Saldo - Conta Corrente</h3>
+                            <button class="refresh-btn" onclick="refreshBalance()">🔄</button>
+                        </div>
+                        <div class="balance-amount" id="totalBalance">R$ 0,00</div>
+                        <div class="balance-subtitle">Atualizado agora</div>
+                    </div>
+                </div>
+
+                <div id="accountsOverview" class="accounts-overview">
+                    <!-- Contas serão carregadas aqui -->
+                </div>
+
+                <div class="recent-statement">
+                    <div class="statement-header">
+                        <h3>Últimas Movimentações</h3>
+                        <button class="statement-view-all" onclick="showSection('statement')">Ver todas</button>
+                    </div>
+                    <div id="recentTransactions" class="transactions-list">
+                        <!-- Transações recentes serão carregadas aqui -->
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <h3>Ações Rápidas</h3>
+                    <div class="actions-grid">
+                        <button class="action-btn" onclick="showSection('transfer')">
+                            <span class="action-icon">💸</span>
+                            <span>Transferir</span>
+                        </button>
+                        <button class="action-btn" onclick="showSection('deposit')">
+                            <span class="action-icon">💰</span>
+                            <span>Depositar</span>
+                        </button>
+                        <button class="action-btn" onclick="showSection('statement')">
+                            <span class="action-icon">📄</span>
+                            <span>Extrato</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transferência -->
+            <!-- Transferência -->
+            <section id="transfer" class="section">
+                <div class="section-header">
+                    <button class="back-btn" onclick="showSection('dashboard')">← Voltar</button>
+                    <h2>Transferir para Terceiros</h2>
+                </div>
+                
+                <div class="transfer-info">
+                    <div class="info-card">
+                        <span class="info-icon">💸</span>
+                        <div class="info-content">
+                            <h3>Transferência para Outras Pessoas</h3>
+                            <p>Envie dinheiro de forma segura para contas de terceiros usando o ID da conta de destino.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="transferForm" class="bank-form">
+                    <div class="form-group">
+                        <label>Transferir de qual conta?</label>
+                        <select id="fromAccountSelect" required>
+                            <option value="">Selecione sua conta</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Para quem transferir?</label>
+                        <input type="number" id="toAccountId" placeholder="Digite o ID da conta de destino" required>
+                        <small class="input-hint">Exemplo: 123456 (ID da conta da pessoa que vai receber)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Valor da Transferência</label>
+                        <div class="amount-input">
+                            <span class="currency">R$</span>
+                            <input type="number" id="transferAmount" step="0.01" min="0.01" placeholder="0,00" required>
+                        </div>
+                        <small class="input-hint">Valor mínimo: R$ 0,01</small>
+                    </div>
+                    
+                    <button type="submit" class="primary-btn">
+                        <span>💸 Transferir</span>
+                        <div class="loading-spinner" style="display: none;">
+                            <div class="spinner"></div>
+                        </div>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Depósito -->
+            <section id="deposit" class="section">
+                <div class="section-header">
+                    <button class="back-btn" onclick="showSection('dashboard')">← Voltar</button>
+                    <h2>Fazer Depósito</h2>
+                </div>
+                
+                <div class="deposit-info">
+                    <div class="info-card">
+                        <span class="info-icon">💰</span>
+                        <div class="info-content">
+                            <h3>Depósito em Conta</h3>
+                            <p>Adicione dinheiro à sua conta corrente ou poupança de forma rápida e segura.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="depositForm" class="bank-form">
+                    <div class="form-group">
+                        <label>Depositar em qual conta?</label>
+                        <div class="account-type-selector deposit-account-selector">
+                            <div class="account-type-option" data-account-type="CHECKING">
+                                <div class="account-type-icon">💳</div>
+                                <div class="account-type-info">
+                                    <h3>Conta Corrente</h3>
+                                    <p>Ideal para movimentações do dia a dia</p>
+                                </div>
+                                <div class="account-type-radio">
+                                    <input type="radio" name="depositAccountType" value="CHECKING" id="depositChecking" checked>
+                                    <label for="depositChecking"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="account-type-option" data-account-type="SAVINGS">
+                                <div class="account-type-icon">🏛️</div>
+                                <div class="account-type-info">
+                                    <h3>Conta Poupança</h3>
+                                    <p>Para guardar e fazer seu dinheiro render</p>
+                                </div>
+                                <div class="account-type-radio">
+                                    <input type="radio" name="depositAccountType" value="SAVINGS" id="depositSavings">
+                                    <label for="depositSavings"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Valor do Depósito</label>
+                        <div class="amount-input">
+                            <span class="currency">R$</span>
+                            <input type="number" id="depositAmount" step="0.01" min="0.01" placeholder="0,00" required>
+                        </div>
+                        <small class="input-hint">Valor mínimo: R$ 0,01</small>
+                    </div>
+                    
+                    <button type="submit" class="primary-btn">
+                        <span>💰 Depositar</span>
+                        <div class="loading-spinner" style="display: none;">
+                            <div class="spinner"></div>
+                        </div>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Extrato -->
+            <section id="statement" class="section">
+                <div class="section-header">
+                    <button class="back-btn" onclick="showSection('dashboard')">← Voltar</button>
+                    <h2>Extrato</h2>
+                </div>
+                
+                <div class="statement-controls">
+                    <button class="refresh-btn" onclick="loadStatement()">🔄 Atualizar</button>
+                </div>
+                
+                <div id="statementContent" class="statement-content">
+                    <!-- Extrato será carregado aqui -->
+                </div>
+            </section>
+
+            <!-- Contas -->
+            <section id="accounts" class="section">
+                <div class="section-header">
+                    <button class="back-btn" onclick="showSection('dashboard')">← Voltar</button>
+                    <h2>Minhas Contas</h2>
+                </div>
+                
+                <div class="accounts-actions">
+                    <button class="secondary-btn" onclick="createNewAccounts()">+ Criar Novas Contas</button>
+                </div>
+                
+                <div id="accountsList" class="accounts-list">
+                    <!-- Lista de contas será carregada aqui -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner"></div>
+            <p>Carregando...</p>
+        </div>
+
+        <!-- Notificações -->
+        <div id="notification" class="notification" style="display: none;">
+            <span id="notificationMessage"></span>
+        </div>
+    </div>
+
+    <!-- Modal de Sucesso -->
+    <div id="successScreen" class="success-screen" style="display: none;">
+        <div class="success-modal">
+            <div class="success-icon">🎉</div>
+            <h2 class="success-title">Conta Criada com Sucesso!</h2>
+            <p class="success-message" id="successMessage">
+                Parabéns! Suas contas foram criadas com sucesso no Alice Bank.
+            </p>
+            <button class="modal-button" onclick="proceedToLogin()">Fazer Login Agora</button>
+        </div>
+    </div>
+
+    <!-- Modal de Erro -->
+    <div id="errorScreen" class="error-screen" style="display: none;">
+        <div class="error-modal">
+            <div class="error-icon">❌</div>
+            <h2 class="error-title">Ops! Algo deu errado</h2>
+            <p class="error-message" id="errorMessage">
+                Não foi possível criar sua conta. Tente novamente.
+            </p>
+            <button class="modal-button" onclick="closeErrorModal()">Tentar Novamente</button>
+            <button class="modal-button secondary" onclick="showLoginScreen()">Voltar ao Login</button>
+        </div>
+    </div>
+
+    <script src="script.js?v=6"></script>
+</body>
+</html>

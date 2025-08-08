@@ -1,7 +1,6 @@
 package com.alicebank.finances.core.domain;
 
 import com.alicebank.finances.core.exception.*;
-import com.picpay.finances.core.exception.*;
 import lombok.Builder;
 import lombok.Getter;
 
