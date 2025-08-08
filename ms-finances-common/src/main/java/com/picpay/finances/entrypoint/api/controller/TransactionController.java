@@ -1,0 +1,58 @@
+package com.picpay.finances.entrypoint.api.controller;
+
+import com.picpay.finances.core.usecase.TransactionUseCase;
+import com.picpay.finances.entrypoint.api.controller.contract.TransactionContract;
+import com.picpay.finances.entrypoint.api.controller.payload.request.DepositRequest;
+import com.picpay.finances.entrypoint.api.controller.payload.request.ScheduledTransactionRequest;
+import com.picpay.finances.entrypoint.api.controller.payload.request.TransactionRequest;
+import com.picpay.finances.entrypoint.api.controller.payload.response.TransactionResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import static org.springframework.http.HttpStatus.CREATED;
+
+@RestController
+@RequestMapping("/transactions")
+@RequiredArgsConstructor
+public class TransactionController implements TransactionContract {
+
+    private final TransactionUseCase transactionUseCase;
+
+    @GetMapping("/{id}")
+    @Override
+    public TransactionResponse searchById(@PathVariable Long id) {
+        var transaction = transactionUseCase.searchById(id);
+        return TransactionResponse.from(transaction);
+    }
+
+    @PostMapping
+    @ResponseStatus(CREATED)
+    public TransactionResponse createTransfer(@Valid @RequestBody TransactionRequest transactionRequest) {
+        var transaction = transactionUseCase.createTransfer(transactionRequest.toTransaction());
+        return TransactionResponse.from(transaction);
+    }
+
+    @PostMapping
+    @ResponseStatus(CREATED)
+    public TransactionResponse createScheduledTransfer(@Valid @RequestBody ScheduledTransactionRequest scheduledTransactionRequest) {
+        var transaction = transactionUseCase.createScheduledTransfer(scheduledTransactionRequest.toTransaction());
+        return TransactionResponse.from(transaction);
+    }
+
+    @PostMapping("/{id}/refund")
+    @ResponseStatus(CREATED)
+    public TransactionResponse createRefund(@PathVariable Long id) {
+        var transaction = transactionUseCase.createRefund(id);
+        return TransactionResponse.from(transaction);
+    }
+
+    @PostMapping("/deposit")
+    @ResponseStatus(CREATED)
+    @Override
+    public TransactionResponse deposit(@Valid @RequestBody DepositRequest depositRequest) {
+        var transaction = transactionUseCase.deposit(depositRequest.toTransaction());
+        return TransactionResponse.from(transaction);
+    }
+
+}

@@ -1,1 +1,6 @@
 rootProject.name = 'ms-finances'
+
+include 'ms-finances-api'
+include 'ms-finances-cronjob'
+include 'ms-finances-common'
+include 'ms-finances-common'

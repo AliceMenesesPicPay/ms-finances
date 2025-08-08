@@ -5,7 +5,6 @@ import com.picpay.finances.core.domain.Transaction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static com.picpay.finances.core.domain.AccountType.CHECKING;
 import static com.picpay.finances.core.domain.Status.ACTIVATED;

@@ -1,8 +1,6 @@
 package com.picpay.finances.util;
 
-import com.picpay.finances.core.domain.AccountType;
 import com.picpay.finances.core.domain.FinancialTransaction;
-import com.picpay.finances.core.domain.Status;
 
 import java.time.LocalDateTime;
 

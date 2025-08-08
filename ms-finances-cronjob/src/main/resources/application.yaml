@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: ms-finances
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    url: ${FINANCES_DATASOURCE_URL}
+    username: ${FINANCES_DATASOURCE_USERNAME}
+    password: ${FINANCES_DATASOURCE_PASSWORD}
+
+picpay:
+  services:
+    customer:
+      url: ${CUSTOMER_URL}
+  finances:
+    job:
+      pageSize: ${FINANCES_JOB_PAGE_SIZE}
+      chunkSize: ${FINANCES_JOB_CHUNK_SIZE}
+      maximumRetries: ${FINANCES_JOB_MAXIMUM_RETRIES}
