@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:15
     restart: always
-    container_name: meu_postgres
+    container_name: finances
     environment:
       POSTGRES_DB: newdatabase
       POSTGRES_USER: root
