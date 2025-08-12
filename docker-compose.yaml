@@ -1,9 +1,9 @@
 version: '3.8'
 services:
-  postgres_finances:
+  postgres:
     image: postgres:15
     restart: always
-    container_name: container_finances
+    container_name: finances
     environment:
       POSTGRES_DB: newdatabase
       POSTGRES_USER: root
@@ -11,39 +11,31 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - postgres_data_finances:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
-  postgres_customer:
-    image: postgres:15
-    restart: always
-    container_name: container_customer
-    environment:
-      POSTGRES_DB: newdatabase
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
-    ports:
-      - '5433:5432'
-    volumes:
-      - postgres_data_customer:/var/lib/postgresql/data
-
-  adminer_finances:
+  adminer:
     image: adminer:latest
     restart: always
-    container_name: container_adminer_finances
+    container_name: meu_adminer
     ports:
-      - '8086:8080'
+      - '8081:8080'
     environment:
-      - ADMINER_DEFAULT_SERVER=postgres_finances
+      - ADMINER_DEFAULT_SERVER=postgres
 
-  adminer_customer:
-    image: adminer:latest
-    restart: always
-    container_name: container_adminer_customer
-    ports:
-      - '8085:8080'
+  picpay-finances:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: picpay-finances
+    container_name: picpay_finances_app
+    depends_on:
+      - postgres
     environment:
-      - ADMINER_DEFAULT_SERVER=postgres_customer
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/newdatabase
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+    ports:
+      - '8080:8080'
 
 volumes:
-  postgres_data_finances:
-  postgres_data_customer:
+  postgres_data:
