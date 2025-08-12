@@ -12,5 +12,6 @@ public interface AccountGateway {
     List<Account> findByCustomerId(Long customerId);
     List<Account> saveAll(List<Account> accounts);
     void save(Account account);
+    List<Account> findCheckingAll();
 
 }

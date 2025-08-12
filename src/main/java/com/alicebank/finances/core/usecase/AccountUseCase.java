@@ -67,4 +67,7 @@ public class AccountUseCase {
         financialTransactionGateway.save(financialTransaction);
     }
 
+    public List<Account> findAll() {
+        return accountGateway.findCheckingAll();
+    }
 }

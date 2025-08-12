@@ -6,6 +6,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   datasource:
-    url: jdbc:postgresql://localhost:5432/finances
+    url: jdbc:postgresql://localhost:5432/newdatabase
     username: root
     password: root

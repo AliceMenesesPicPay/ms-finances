@@ -48,4 +48,10 @@ public class AccountImpl implements AccountGateway {
         accountRepository.save(AccountEntity.fromAccount(account));
     }
 
+    @Override
+    public List<Account> findCheckingAll() {
+        var accountEntities = accountRepository.findByAccountType(CHECKING);
+        return accountEntities.stream().map(AccountEntity::toAccount).toList();
+    }
+
 }

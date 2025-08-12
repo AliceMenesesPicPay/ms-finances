@@ -4,8 +4,6 @@ import com.alicebank.finances.core.domain.Account;
 import com.alicebank.finances.core.domain.FinancialTransaction;
 import com.alicebank.finances.core.domain.Transaction;
 import com.alicebank.finances.core.exception.*;
-import com.picpay.finances.core.domain.*;
-import com.picpay.finances.core.exception.*;
 import com.alicebank.finances.core.gateway.FinancialTransactionGateway;
 import com.alicebank.finances.core.gateway.TransactionGateway;
 import com.alicebank.finances.util.TransactionMock;

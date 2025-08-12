@@ -28,10 +28,16 @@ public class AccountController implements AccountContract {
         return AccountResponse.from(account);
     }
 
-    @GetMapping
-    @Override
-    public List<AccountResponse> searchByCustomerId(@RequestParam Long customerId) {
+history | grep <palavra-chave> {
         var accounts = accountUseCase.searchByCustomerId(customerId);
+        return accounts.stream()
+                .map(AccountResponse::from)
+                .toList();
+    }
+
+    @GetMapping("/checking")
+    public List<AccountResponse> findAll() {
+        var accounts = accountUseCase.findAll();
         return accounts.stream()
                 .map(AccountResponse::from)
                 .toList();

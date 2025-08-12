@@ -1,5 +1,5 @@
 // ===== CONFIGURAÇÃO E ESTADO GLOBAL =====
-const API_BASE_URL = 'http://localhost:8081';
+const API_BASE_URL = 'http://localhost:8080';
 let currentCustomer = null;
 let customerAccounts = [];
 let currentAccountType = 'CHECKING'; // Conta corrente como padrão
@@ -101,31 +101,28 @@ async function loadRecentTransactions() {
     }
     
     try {
-        // Buscar transações do cliente
-        const transactions = await makeAPIRequest(`/transactions?customerId=${currentCustomer}`);
+        // Usar o endpoint de statements que já existe
+        const statement = await makeAPIRequest(`/statements?customerId=${currentCustomer}&size=5`);
         
         const recentTransactionsContainer = document.getElementById('recentTransactions');
         
-        if (transactions && transactions.length > 0) {
+        if (statement && statement.financialTransactions && statement.financialTransactions.length > 0) {
             // Ordenar por data (mais recentes primeiro) e pegar apenas as 5 mais recentes
-            const sortedTransactions = transactions
+            const sortedTransactions = statement.financialTransactions
                 .sort((a, b) => new Date(b.createdAt || b.timestamp || 0) - new Date(a.createdAt || a.timestamp || 0))
                 .slice(0, 5);
             
-            recentTransactionsContainer.innerHTML = sortedTransactions.map(transaction => `
+            recentTransactionsContainer.innerHTML = sortedTransactions.map(financialTransaction => `
                 <div class="transaction-item">
                     <div class="transaction-icon">
-                        ${getTransactionIcon(transaction.type)}
+                        ${financialTransaction.financialTransactionType === 'CREDIT' ? '💰' : '💸'}
                     </div>
                     <div class="transaction-details">
-                        <div class="transaction-description">${getTransactionDescription(transaction)}</div>
-                        <div class="transaction-date">${formatDate(transaction.createdAt || transaction.timestamp)}</div>
+                        <div class="transaction-description">${financialTransaction.description}</div>
+                        <div class="transaction-date">${formatDate(financialTransaction.createdAt)}</div>
                     </div>
-                    <div class="transaction-amount ${transaction.type === 'CREDIT' || transaction.type === 'DEPOSIT' ? 'positive' : 'negative'}">
-                        ${transaction.type === 'CREDIT' || transaction.type === 'DEPOSIT' ? '+' : '-'}R$ ${Math.abs(transaction.amount || 0).toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        })}
+                    <div class="transaction-amount ${financialTransaction.financialTransactionType === 'CREDIT' ? 'positive' : 'negative'}">
+                        ${financialTransaction.financialTransactionType === 'CREDIT' ? '+' : ''}${formatCurrency(Math.abs(financialTransaction.amount || 0))}
                     </div>
                 </div>
             `).join('');
@@ -165,7 +162,7 @@ function createTransactionElement(transaction) {
         amountPrefix = '+';
     } else if (transaction.transactionType === 'TRANSFER') {
         transactionType = 'transfer';
-        icon = '→';
+        icon = '-';
         amountClass = 'negative';
         amountPrefix = '-';
     } else {
@@ -240,22 +237,19 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 document.getElementById('createAccountForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const accountName = document.getElementById('accountName').value;
-    const customerId = document.getElementById('customerId').value;
-    const accountType = document.querySelector('input[name="accountType"]:checked').value;
+    const customerId = document.getElementById('newCustomerId').value;
     
-    await createAccount(accountName, customerId, accountType);
+    await createAccount(accountName, customerId);
 });
 
-async function createAccount(accountName, customerId, accountType) {
+async function createAccount(accountName, customerId) {
     try {
-        // Mostrar loading
-        const submitBtn = document.querySelector('#createAccountForm button');
-        const loadingSpinner = document.querySelector('.create-loading');
-        const buttonText = submitBtn.querySelector('span');
-        
-        buttonText.style.display = 'none';
-        loadingSpinner.style.display = 'flex';
-        submitBtn.disabled = true;
+        // Mostrar loading no botão
+        const submitBtn = document.querySelector('#createAccountForm button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Criando contas...';
+        }
         
         // Verificar se o cliente já existe
         try {
@@ -272,45 +266,39 @@ async function createAccount(accountName, customerId, accountType) {
             }
         }
         
-        // Criar a conta com o tipo especificado
-        const newAccount = await makeAPIRequest('/accounts', {
+        // Criar as contas (ambas serão criadas automaticamente pelo endpoint)
+        const newAccounts = await makeAPIRequest('/accounts', {
             method: 'POST',
             body: JSON.stringify({ 
                 customerId: parseInt(customerId),
-                accountName: accountName,
-                accountType: accountType
+                accountName: accountName
             })
         });
         
         // Mostrar tela de sucesso
-        showSuccessScreen(customerId, [newAccount], accountType);
+        showSuccessScreen(customerId, newAccounts);
         
     } catch (error) {
         showErrorScreen(error.message);
     } finally {
         // Restaurar botão
-        const submitBtn = document.querySelector('#createAccountForm button');
-        const loadingSpinner = document.querySelector('.create-loading');
-        const buttonText = submitBtn.querySelector('span');
-        
-        buttonText.style.display = 'block';
-        loadingSpinner.style.display = 'none';
-        submitBtn.disabled = false;
+        const submitBtn = document.querySelector('#createAccountForm button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Criar Contas';
+        }
     }
 }
 
-function showSuccessScreen(customerId, accounts, accountType) {
-    const accountTypeName = accountType === 'CHECKING' ? 'Conta Corrente' : 'Conta Poupança';
-    const accountTypeIcon = accountType === 'CHECKING' ? '💳' : '🏛️';
-    
+function showSuccessScreen(customerId, accounts) {
     document.getElementById('successMessage').innerHTML = `
         <strong>Bem-vindo ao Alice Bank!</strong><br><br>
         
         ✅ Seu número de cliente: <strong>#${customerId}</strong><br>
-        ✅ Conta criada: <strong>${accountTypeIcon} ${accountTypeName}</strong><br>
-        ✅ Status: <strong>Ativa e pronta para uso</strong><br><br>
+        ✅ Contas criadas: <strong>💳 Conta Corrente</strong> e <strong>🏛️ Conta Poupança</strong><br>
+        ✅ Status: <strong>Ativas e prontas para uso</strong><br><br>
         
-        Agora você pode fazer login e começar a usar seu banco digital!
+        Agora você pode fazer login e começar a usar seu banco digital completo!
     `;
     
     successScreen.style.display = 'flex';
@@ -625,7 +613,7 @@ async function loadTransferForm() {
     const fromAccountSelect = document.getElementById('fromAccountSelect');
     fromAccountSelect.innerHTML = '<option value="">Selecione a conta de origem</option>';
     
-    // Carregar apenas contas ativas
+    // Carregar apenas contas ativas do usuário atual
     const activeAccounts = customerAccounts.filter(account => account.status === 'ACTIVATED');
     activeAccounts.forEach(account => {
         const option = document.createElement('option');
@@ -634,16 +622,64 @@ async function loadTransferForm() {
         option.textContent = `${accountType} - ${account.number}-${account.digit} (${formatCurrency(account.balance)})`;
         fromAccountSelect.appendChild(option);
     });
+    
+    // Carregar todas as contas correntes disponíveis para transferência
+    await loadAvailableCheckingAccounts();
+}
+
+async function loadAvailableCheckingAccounts() {
+    try {
+        const toAccountSelect = document.getElementById('toAccountSelect');
+        toAccountSelect.innerHTML = '<option value="">Carregando contas disponíveis...</option>';
+        
+        // Buscar todas as contas correntes através do endpoint
+        const allCheckingAccounts = await makeAPIRequest('/accounts/checking');
+        
+        // Filtrar para remover as contas do próprio usuário
+        const availableAccounts = allCheckingAccounts.filter(account => 
+            account.customerId !== parseInt(currentCustomer) && 
+            account.status === 'ACTIVATED'
+        );
+        
+        toAccountSelect.innerHTML = '<option value="">Selecione a conta de destino</option>';
+        
+        if (availableAccounts.length > 0) {
+            availableAccounts.forEach(account => {
+                const option = document.createElement('option');
+                // Usar um valor único que contenha todas as informações necessárias
+                option.value = JSON.stringify({
+                    id: account.id,
+                    number: account.number,
+                    digit: account.digit,
+                    agency: account.agency,
+                    customerId: account.customerId
+                });
+                option.textContent = `Cliente ${account.customerId} - ${account.number}-${account.digit} - Agência ${account.agency}`;
+                toAccountSelect.appendChild(option);
+            });
+        } else {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Nenhuma conta disponível para transferência';
+            option.disabled = true;
+            toAccountSelect.appendChild(option);
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar contas disponíveis:', error);
+        const toAccountSelect = document.getElementById('toAccountSelect');
+        toAccountSelect.innerHTML = '<option value="">Erro ao carregar contas disponíveis</option>';
+    }
 }
 
 document.getElementById('transferForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const fromAccountId = document.getElementById('fromAccountSelect').value;
-    const toAccountId = document.getElementById('toAccountId').value;
+    const toAccountData = document.getElementById('toAccountSelect').value;
     const amount = document.getElementById('transferAmount').value;
     
-    if (!fromAccountId || !toAccountId || !amount) {
+    if (!fromAccountId || !toAccountData || !amount) {
         showNotification('Preencha todos os campos', 'error');
         return;
     }
@@ -651,17 +687,43 @@ document.getElementById('transferForm').addEventListener('submit', async (e) => 
     try {
         showLoading(true);
         
+        // Encontrar a conta de origem pelos dados completos
+        const fromAccount = customerAccounts.find(acc => acc.id == fromAccountId);
+        if (!fromAccount) {
+            throw new Error('Conta de origem não encontrada');
+        }
+        
+        // Parse dos dados da conta de destino (vem como JSON string)
+        let toAccount;
+        try {
+            toAccount = JSON.parse(toAccountData);
+        } catch (error) {
+            throw new Error('Dados da conta de destino inválidos');
+        }
+        
+        // Fazer a transferência com o formato correto
         await makeAPIRequest('/transactions', {
             method: 'POST',
             body: JSON.stringify({
-                fromAccountId: parseInt(fromAccountId),
-                toAccountId: parseInt(toAccountId),
+                fromAccount: {
+                    number: fromAccount.number,
+                    digit: fromAccount.digit,
+                    agency: fromAccount.agency
+                },
+                toAccount: {
+                    number: toAccount.number,
+                    digit: toAccount.digit,
+                    agency: toAccount.agency
+                },
                 amount: parseFloat(amount)
             })
         });
         
-        showNotification('Transferência realizada com sucesso!', 'success');
+        showNotification(`Transferência de ${formatCurrency(amount)} realizada com sucesso para Cliente ${toAccount.customerId}!`, 'success');
         document.getElementById('transferForm').reset();
+        
+        // Recarregar as contas disponíveis
+        await loadAvailableCheckingAccounts();
         
         // Atualizar dashboard
         await loadDashboard();
@@ -810,16 +872,17 @@ async function loadStatement() {
     try {
         showLoading(true);
         
-        const transactions = await makeAPIRequest(`/transactions?customerId=${currentCustomer}`);
+        // Usar o endpoint correto de statements
+        const statement = await makeAPIRequest(`/statements?customerId=${currentCustomer}`);
         const statementContent = document.getElementById('statementContent');
         
-        if (transactions && transactions.length > 0) {
-            statementContent.innerHTML = formatStatement(transactions);
+        if (statement && statement.financialTransactions && statement.financialTransactions.length > 0) {
+            statementContent.innerHTML = formatStatement(statement.financialTransactions);
         } else {
             statementContent.innerHTML = `
                 <div class="statement-content">
                     <div class="no-transactions">
-                        Nenhuma transação encontrada para este cliente.
+                        Nenhuma movimentação encontrada para este cliente.
                     </div>
                 </div>
             `;
@@ -839,34 +902,34 @@ async function loadStatement() {
     }
 }
 
-function formatStatement(transactions) {
+function formatStatement(financialTransactions) {
     let html = `
         <div class="statement-header">
             <h4>📄 Extrato Bancário - Alice Bank</h4>
             <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
-            <p>Total de transações: ${transactions.length}</p>
+            <p>Total de movimentações: ${financialTransactions.length}</p>
         </div>
     `;
     
     html += '<div class="transactions-list">';
-    transactions.forEach((transaction, index) => {
-        const isCredit = transaction.type === 'CREDIT' || transaction.type === 'DEPOSIT';
+    financialTransactions.forEach((financialTransaction, index) => {
+        const isCredit = financialTransaction.financialTransactionType === 'CREDIT';
         const amountClass = isCredit ? 'amount-credit' : 'amount-debit';
-        const icon = getTransactionIcon(transaction.type);
+        const icon = isCredit ? '💰' : '💸';
         
         html += `
             <div class="transaction-item">
                 <div class="transaction-header">
                     <span class="transaction-icon">${icon}</span>
-                    <span class="transaction-type">${transaction.type || transaction.financialTransactionType}</span>
-                    <span class="transaction-date">${formatDate(transaction.createdAt || transaction.timestamp)}</span>
+                    <span class="transaction-type">${financialTransaction.financialTransactionType}</span>
+                    <span class="transaction-date">${new Date(financialTransaction.createdAt).toLocaleDateString('pt-BR')}</span>
                 </div>
-                <div class="transaction-description">${getTransactionDescription(transaction)}</div>
+                <div class="transaction-description">${financialTransaction.description}</div>
                 <div class="transaction-amounts">
                     <span class="transaction-amount ${amountClass}">
-                        ${isCredit ? '+' : ''}${formatCurrency(Math.abs(transaction.amount))}
+                        ${isCredit ? '+' : ''}${formatCurrency(Math.abs(financialTransaction.amount))}
                     </span>
-                    <span class="transaction-balance">Saldo: ${formatCurrency(transaction.balance || 0)}</span>
+                    <span class="transaction-balance">Saldo: ${formatCurrency(financialTransaction.balance || 0)}</span>
                 </div>
             </div>
         `;
@@ -884,16 +947,32 @@ async function loadAccountsDetails() {
         return;
     }
     
-    const accountsList = document.getElementById('accountsList');
-    accountsList.innerHTML = '';
-    
-    if (customerAccounts.length > 0) {
-        customerAccounts.forEach(account => {
-            const accountCard = createDetailedAccountCard(account);
-            accountsList.appendChild(accountCard);
-        });
-    } else {
-        accountsList.innerHTML = '<div class="no-accounts">Nenhuma conta encontrada.</div>';
+    try {
+        showLoading(true);
+        
+        // Buscar contas do cliente através do endpoint específico
+        const accounts = await makeAPIRequest(`/accounts?customerId=${currentCustomer}`);
+        
+        const accountsList = document.getElementById('accountsList');
+        accountsList.innerHTML = '';
+        
+        if (accounts && accounts.length > 0) {
+            accounts.forEach(account => {
+                const accountCard = createDetailedAccountCard(account);
+                accountsList.appendChild(accountCard);
+            });
+        } else {
+            accountsList.innerHTML = '<div class="no-accounts">Nenhuma conta encontrada para este cliente.</div>';
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar detalhes das contas:', error);
+        showNotification(`Erro ao carregar contas: ${error.message}`, 'error');
+        
+        const accountsList = document.getElementById('accountsList');
+        accountsList.innerHTML = '<div class="no-accounts">Erro ao carregar as contas. Tente novamente.</div>';
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -917,13 +996,6 @@ function createDetailedAccountCard(account) {
             <p><strong>Cliente:</strong> ${account.customerId}</p>
         </div>
         <div class="account-balance">${formatCurrency(account.balance || 0)}</div>
-        ${account.status === 'ACTIVATED' ? `
-            <div class="account-actions">
-                <button class="secondary-btn" onclick="cancelAccount(${account.customerId})">
-                    Cancelar Contas
-                </button>
-            </div>
-        ` : ''}
     `;
     
     return card;
@@ -972,6 +1044,36 @@ async function cancelAccount(customerId) {
     }
 }
 
+async function cancelAllAccounts() {
+    const confirm = window.confirm('⚠️ ATENÇÃO!\n\nTem certeza que deseja cancelar TODAS as suas contas?\n\n• Conta Corrente\n• Conta Poupança\n\nEsta ação não pode ser desfeita!');
+    if (!confirm) return;
+    
+    try {
+        showLoading(true);
+        
+        await makeAPIRequest('/accounts/cancel', {
+            method: 'PATCH',
+            body: JSON.stringify({ customerId: parseInt(currentCustomer) })
+        });
+        
+        showNotification('Todas as contas foram canceladas com sucesso!', 'success');
+        
+        // Atualizar dados locais
+        customerAccounts = [];
+        checkingAccount = null;
+        savingsAccount = null;
+        
+        // Atualizar dashboard e lista de contas
+        await loadDashboard();
+        await loadAccountsDetails();
+        
+    } catch (error) {
+        showNotification(`Erro ao cancelar contas: ${error.message}`, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
 // ===== UTILITÁRIOS =====
 async function makeAPIRequest(url, options = {}) {
     try {
@@ -1005,7 +1107,7 @@ async function makeAPIRequest(url, options = {}) {
     } catch (error) {
         // Melhorar mensagens de erro específicas
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Não foi possível conectar com o servidor. Verifique se a API está rodando em http://localhost:8081');
+            throw new Error('Não foi possível conectar com o servidor. Verifique se a API está rodando em http://localhost:8080');
         }
         
         throw error;
@@ -1017,6 +1119,28 @@ function formatCurrency(amount) {
         style: 'currency',
         currency: 'BRL'
     }).format(amount);
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'Data não informada';
+    
+    try {
+        const date = new Date(dateString);
+        
+        // Verificar se a data é válida
+        if (isNaN(date.getTime())) {
+            return 'Data inválida';
+        }
+        
+        return date.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    } catch (error) {
+        console.error('Erro ao formatar data:', error);
+        return 'Data inválida';
+    }
 }
 
 function showLoading(show) {
