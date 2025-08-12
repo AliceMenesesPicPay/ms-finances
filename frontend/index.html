@@ -49,47 +49,32 @@
                 <p class="login-subtitle">Criar Nova Conta</p>
             </div>
             
-                        <form id="createAccountForm">
+            <div class="account-creation-info">
+                <div class="info-highlight">
+                    <span class="info-icon">💳🏛️</span>
+                    <div class="info-text">
+                        <h3>Contas Completas para Você!</h3>
+                        <p>Ao criar sua conta, você receberá automaticamente:</p>
+                        <ul>
+                            <li>✅ <strong>Conta Corrente</strong> - Para o dia a dia</li>
+                            <li>✅ <strong>Conta Poupança</strong> - Para guardar e render</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="createAccountForm">
                 <div class="input-group">
                     <label for="accountName">Nome da conta</label>
                     <input type="text" id="accountName" placeholder="Digite o nome da sua conta" required>
                 </div>
                 
                 <div class="input-group">
-                    <label for="customerId">ID do cliente</label>
-                    <input type="text" id="customerId" placeholder="Digite seu ID de cliente" required>
+                    <label for="newCustomerId">ID do cliente</label>
+                    <input type="text" id="newCustomerId" placeholder="Digite seu ID de cliente" required>
                 </div>
                 
-                <div class="input-group">
-                    <label for="accountType">Tipo de conta</label>
-                    <div class="account-type-selector">
-                        <div class="account-type-option" data-type="CHECKING">
-                            <div class="account-type-icon">💳</div>
-                            <div class="account-type-info">
-                                <h3>Conta Corrente</h3>
-                                <p>Para o dia a dia, com cartão de débito e transferências ilimitadas</p>
-                            </div>
-                            <div class="account-type-radio">
-                                <input type="radio" name="accountType" value="CHECKING" id="checking" checked>
-                                <label for="checking"></label>
-                            </div>
-                        </div>
-                        
-                        <div class="account-type-option" data-type="SAVINGS">
-                            <div class="account-type-icon">🏛️</div>
-                            <div class="account-type-info">
-                                <h3>Conta Poupança</h3>
-                                <p>Para guardar dinheiro com rendimento e segurança</p>
-                            </div>
-                            <div class="account-type-radio">
-                                <input type="radio" name="accountType" value="SAVINGS" id="savings">
-                                <label for="savings"></label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn-primary">Criar conta</button>
+                <button type="submit" class="btn-primary">Criar Contas</button>
             </form>
             
             <div class="login-footer">
@@ -202,7 +187,6 @@
             </section>
 
             <!-- Transferência -->
-            <!-- Transferência -->
             <section id="transfer" class="section">
                 <div class="section-header">
                     <button class="back-btn" onclick="showSection('dashboard')">← Voltar</button>
@@ -214,7 +198,7 @@
                         <span class="info-icon">💸</span>
                         <div class="info-content">
                             <h3>Transferência para Outras Pessoas</h3>
-                            <p>Envie dinheiro de forma segura para contas de terceiros usando o ID da conta de destino.</p>
+                            <p>Envie dinheiro de forma segura para contas de terceiros selecionando a conta de destino.</p>
                         </div>
                     </div>
                 </div>
@@ -228,9 +212,11 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Para quem transferir?</label>
-                        <input type="number" id="toAccountId" placeholder="Digite o ID da conta de destino" required>
-                        <small class="input-hint">Exemplo: 123456 (ID da conta da pessoa que vai receber)</small>
+                        <label>Para qual conta transferir?</label>
+                        <select id="toAccountSelect" required>
+                            <option value="">Carregando contas disponíveis...</option>
+                        </select>
+                        <small class="input-hint">Selecione a conta corrente de destino para a transferência</small>
                     </div>
                     
                     <div class="form-group">
@@ -324,7 +310,7 @@
                 </div>
                 
                 <div class="statement-controls">
-                    <button class="refresh-btn" onclick="loadStatement()">🔄 Atualizar</button>
+                    <button class="refresh-btn" onclick="loadStatement()">Atualizar</button>
                 </div>
                 
                 <div id="statementContent" class="statement-content">
@@ -340,7 +326,7 @@
                 </div>
                 
                 <div class="accounts-actions">
-                    <button class="secondary-btn" onclick="createNewAccounts()">+ Criar Novas Contas</button>
+                    <button class="cancel-accounts-btn" onclick="cancelAllAccounts()">🗑️ Cancelar Todas as Contas</button>
                 </div>
                 
                 <div id="accountsList" class="accounts-list">

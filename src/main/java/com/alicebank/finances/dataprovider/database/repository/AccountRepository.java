@@ -13,5 +13,7 @@ public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
 
     Optional<AccountEntity> findByAccountTypeAndNumberAndDigit(AccountType accountType, String number, String digit);
 
+    List<AccountEntity> findByAccountType(AccountType accountType);
+
 }
 

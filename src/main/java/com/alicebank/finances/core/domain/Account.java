@@ -115,7 +115,9 @@ public class Account {
     }
 
     public void debit(final BigDecimal amount) {
-        if (balance.compareTo(ZERO) <= 0) {
+        var newBalance = balance.subtract(amount);
+
+        if (newBalance.compareTo(ZERO) <= 0) {
             throw new TransactionDeclinedException(id);
         }
 
@@ -123,7 +125,7 @@ public class Account {
             throw new AccountAlreadyCancelledException(id);
         }
 
-        balance = balance.subtract(amount);
+        balance = newBalance;
     }
 
     public void credit(final BigDecimal amount) {
