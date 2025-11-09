@@ -1,4 +1,10 @@
 spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin123
+    virtual-host: /
   application:
     name: ms-finances
   jpa:
@@ -9,11 +15,24 @@ spring:
     url: ${FINANCES_DATASOURCE_URL}
     username: ${FINANCES_DATASOURCE_USERNAME}
     password: ${FINANCES_DATASOURCE_PASSWORD}
+  batch:
+    job:
+      enabled: true
+      names: financesJob
 
 picpay:
   services:
     customer:
       url: ${CUSTOMER_URL}
+    finances:
+      job:
+        pageSize: ${FINANCES_JOB_PAGE_SIZE}
+        chunkSize: ${FINANCES_JOB_CHUNK_SIZE}
 
 server:
   port: 8081
+
+logging:
+  level:
+    org.springframework.batch: TRACE
+    root: INFO
